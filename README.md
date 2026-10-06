@@ -22,3 +22,12 @@ and gate outcomes: a confidence bar is a rendering of a statistic the classifier
 never a substance, and never a permission. A UUID is an address for correlation, never a credential.
 
 SOMACOSF
+
+## Repo map
+
+- `site/index.html` — the architect.somacosf.com page source (single self-contained file; deployed to Vercel project `architect-site`).
+- `media/` — the motion assets: 36s explainer MP4 (+ release asset), core-cycle GIF, UUID-fit diagram GIF.
+- `harness/` — the Guardian/Sentinel test harness: `guardian.py` (verified core), `cli.py` (run/verify/check), `scenarios/`, README.
+- `docs/DESIGN-NOTE.md` — SOM-DOC-10109: how the SoMaCo UUID protocol fits the Guardian/Sentinel shape (identity, ceilings, PDP gate, witness receipts).
+
+Law of the space: confidence routes, policy authorizes, receipts prove. Systems shown are informational, not physical; density is a rendering of a statistic.

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHITECT — Guardian/Sentinel Working Space · SOMACOSF</title>
+<style>
+  :root{
+    --bg:#07080a; --panel:#0c0e11; --panel2:#101318; --line:#232830; --line2:#2e3540;
+    --ink:#d7dce4; --dim:#8a94a3; --faint:#5b6472;
+    --gold:#C9A227; --gold-dim:rgba(201,162,39,.14);
+    --ok:#7fb069; --deny:#d1603d; --esc:#6ea8d8;
+    --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+    --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;
+    background-image:radial-gradient(1200px 500px at 70% -10%,rgba(201,162,39,.05),transparent 60%);}
+  a{color:var(--dim)} a:hover{color:var(--ink)}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 22px 80px}
+  .mono{font-family:var(--mono)}
+  .dim{color:var(--dim)} .faint{color:var(--faint)}
+  .gold{color:var(--gold)}
+
+  /* ── stretched hex chips ─────────────────────────── */
+  .hex{display:inline-block;padding:.28em 1.1em;font-family:var(--mono);font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    background:var(--panel2);border:1px solid var(--line2);
+    clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,12px 100%,0 50%);}
+  .hex.live{color:#0a0b0d;background:var(--gold);border-color:var(--gold);font-weight:700}
+  .hex.ghost{background:transparent}
+
+  header.top{padding:26px 0 0;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{font-family:var(--mono);letter-spacing:.3em;font-size:13px;color:var(--ink)}
+  .brand b{color:var(--gold);font-weight:700}
+  nav.top{display:flex;gap:8px;flex-wrap:wrap}
+  nav.top a{text-decoration:none}
+  nav.top a .hex{transition:all .15s}
+  nav.top a:hover .hex{color:var(--ink);border-color:var(--faint)}
+
+  .hero{padding:64px 0 30px;border-bottom:1px solid var(--line)}
+  .hero h1{font-size:clamp(30px,5.4vw,54px);line-height:1.04;font-weight:800;letter-spacing:-.01em}
+  .hero h1 .thin{font-weight:300;color:var(--dim)}
+  .hero .law{margin-top:22px;font-family:var(--mono);font-size:clamp(14px,2.4vw,20px);letter-spacing:.04em}
+  .hero .law .gold{font-weight:700}
+  .hero p.lede{margin-top:18px;max-width:720px;color:var(--dim);font-size:16.5px}
+  .hero .meta{margin-top:26px;display:flex;gap:8px;flex-wrap:wrap}
+
+  section{padding:52px 0 8px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:24px;flex-wrap:wrap}
+  .sec-head .no{font-family:var(--mono);color:var(--faint);font-size:12px;letter-spacing:.2em}
+  .sec-head h2{font-size:22px;font-weight:700;letter-spacing:.01em}
+  .sec-head .sub{color:var(--dim);font-size:13.5px;margin-left:auto;font-family:var(--mono)}
+  p.body{color:var(--dim);max-width:760px;margin-bottom:14px}
+  p.body b, li b{color:var(--ink);font-weight:600}
+
+  /* mapping table */
+  table.map{width:100%;border-collapse:collapse;font-size:14px}
+  table.map th{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--faint);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+  table.map td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  table.map td.his{font-weight:600;color:var(--ink);white-space:nowrap}
+  table.map td.ours{font-family:var(--mono);font-size:13px;color:var(--gold);white-space:nowrap}
+  table.map tr:hover td{background:rgba(255,255,255,.015)}
+
+  /* scenario stepper */
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  button.step{cursor:pointer;font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    color:var(--dim);background:var(--panel2);border:1px solid var(--line2);padding:10px 18px 10px 22px;
+    clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%,0 50%);text-align:left;transition:all .15s}
+  button.step:hover{color:var(--ink);border-color:var(--faint)}
+  button.step.sel{color:#0a0b0d;background:var(--gold);border-color:var(--gold);font-weight:700}
+  button.step .v{display:block;font-size:10px;letter-spacing:.14em;opacity:.75;margin-top:2px}
+  .receipt-view{background:#050607;border:1px solid var(--line2);padding:18px 20px;overflow-x:auto}
+  .receipt-view .rhead{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .receipt-view pre{font-family:var(--mono);font-size:12.3px;line-height:1.65;color:#b9c2cf;white-space:pre}
+  .k{color:#7d8aa0}.s{color:#c9d4a3}.n{color:#d8a24a}.h{color:#8a94a3}
+  .verdict{font-family:var(--mono);font-size:11px;letter-spacing:.14em;padding:.3em .9em;border:1px solid}
+  .verdict.allow{color:var(--ok);border-color:var(--ok)}
+  .verdict.deny{color:var(--deny);border-color:var(--deny)}
+  .verdict.escalate{color:var(--esc);border-color:var(--esc)}
+
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.twocol{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);padding:20px 22px}
+  .card h3{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+  .card ul{list-style:none}
+  .card li{padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px;color:var(--dim)}
+  .card li:last-child{border-bottom:none}
+  .card li b{font-family:var(--mono);font-size:12.5px}
+
+  .term{background:#050607;border:1px solid var(--line2);padding:18px 20px;font-family:var(--mono);
+    font-size:12.5px;line-height:1.75;overflow-x:auto;white-space:pre;color:#aeb8c6}
+  .term .pass{color:var(--ok)}
+  .term .final{color:var(--gold);font-weight:700}
+
+  .checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:16px}
+  .check{background:var(--panel);border:1px solid var(--line);padding:16px 18px}
+  .check .t{font-family:var(--mono);font-size:12px;color:var(--ink);margin-bottom:6px}
+  .check .d{font-size:12.5px;color:var(--dim)}
+  .check .badge{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ok)}
+
+  /* notes */
+  .note-form{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+  textarea,input[type=text]{background:#050607;border:1px solid var(--line2);color:var(--ink);
+    font-family:var(--mono);font-size:13px;padding:12px 14px;width:100%;resize:vertical}
+  textarea:focus,input[type=text]:focus{outline:none;border-color:var(--gold)}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+  button.btn{cursor:pointer;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+    background:var(--panel2);color:var(--ink);border:1px solid var(--line2);padding:10px 20px;transition:all .15s}
+  button.btn:hover{border-color:var(--gold);color:var(--gold)}
+  button.btn.primary{background:var(--gold);color:#0a0b0d;border-color:var(--gold);font-weight:700}
+  button.btn.small{padding:5px 12px;font-size:10.5px}
+  button.btn.danger:hover{border-color:var(--deny);color:var(--deny)}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--line2);padding:14px 18px;margin-bottom:10px}
+  .note .nmeta{font-family:var(--mono);font-size:11px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .note .nbody{font-size:14px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+  .note .nops{margin-top:8px;display:flex;gap:6px}
+  .empty{color:var(--faint);font-family:var(--mono);font-size:12.5px;padding:14px 0}
+  .honest{border:1px dashed var(--line2);padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:14px}
+  .honest b{color:var(--gold)}
+
+  /* motion */
+  .motion-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.motion-grid{grid-template-columns:1fr}}
+  .motion-card{background:var(--panel);border:1px solid var(--line);padding:16px 18px}
+  .motion-card .tag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  .motion-card img,.motion-card video{display:block;width:100%;height:auto;border:1px solid var(--line2);background:#050607;margin:12px 0 10px}
+  .motion-card .cap{font-size:12.5px;color:var(--dim);line-height:1.6}
+  .motion-card .cap b{color:var(--ink)}
+  .motion-wide{margin-bottom:18px}
+
+  .log{list-style:none}
+  .log li{display:flex;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px;flex-wrap:wrap}
+  .log .when{font-family:var(--mono);font-size:12px;color:var(--faint);white-space:nowrap;padding-top:2px}
+  .log .what{color:var(--dim)} .log .what b{color:var(--ink)}
+
+  footer{margin-top:70px;border-top:1px solid var(--line);padding-top:22px;display:flex;
+    justify-content:space-between;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.08em}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="brand">SOMA<b>CO</b>SF</div>
+  <nav class="top">
+    <a href="#shape"><span class="hex">The Shape</span></a>
+    <a href="#receipts"><span class="hex">Receipts</span></a>
+    <a href="#harness"><span class="hex">Harness</span></a>
+    <a href="#motion"><span class="hex">Motion</span></a>
+    <a href="#estate"><span class="hex">ITPM × Imbue</span></a>
+    <a href="#notes"><span class="hex live">Notes</span></a>
+  </nav>
+</header>
+
+<div class="hero">
+  <span class="hex live">Working space · v0</span>
+  <h1 style="margin-top:20px">ARCHITECT<br><span class="thin">Guardian/Sentinel working space</span></h1>
+  <div class="law">Confidence routes. Policy authorizes. Receipts prove.</div>
+  <p class="lede">This space exists because a Discord thread converged on the same architecture from two
+  directions. You are integrating a Jev classifier into a Guardian/Sentinel layer for a DEX.
+  We build the same shape for governed software. This page maps your vocabulary to ours, shows the
+  receipt schema field by field, and runs the harness that proves the gate — so we can iterate on
+  one shared artifact instead of trading claims.</p>
+  <div class="meta">
+    <span class="hex">Status: harness self-check green</span>
+    <span class="hex">Classifier: stub — live Jev is the named swap</span>
+    <span class="hex">Design note: SOM-DOC-10109</span>
+  </div>
+</div>
+
+<!-- ══════════ 2 · THE SHAPE ══════════ -->
+<section id="shape">
+  <div class="sec-head"><span class="no">01</span><h2>The Shape</h2><span class="sub">your names first-class · ours in gold</span></div>
+  <p class="body">Your post named the boundary precisely: Jev is <b>not intended to hold authority</b> over the
+  exchange — it is the structured decision layer. <b>LedgerGuard</b> remains the deterministic policy boundary
+  for anything that can materially affect the platform. That is the architecture we ship. The mapping:</p>
+
+  <table class="map">
+    <tr><th>Your term</th><th>Our term</th><th>What it means, shared</th></tr>
+    <tr><td class="his">LedgerGuard</td><td class="ours">PDP GATE</td>
+      <td>The deterministic policy boundary. Every proposed act climbs it. It checks act class, ceiling, scope, value, and forbidden acts — and its outcome, not the model&rsquo;s confidence, is what authorizes.</td></tr>
+    <tr><td class="his">Guardian / Sentinel</td><td class="ours">BOUNDED ACTOR</td>
+      <td>An actor with a capability ceiling carried in its identity: allowed act classes, max value at risk, allowed scopes. A sentinel may <b>monitor, restrict, quarantine, reroute, escalate</b> — never expand its own permissions, move treasury funds, bypass limits, or override hard controls.</td></tr>
+    <tr><td class="his">Decision-receipt</td><td class="ours">WITNESS LEDGER</td>
+      <td>Every material proposal, gate decision, and act result appends a hash-chained receipt. The audit trail is the decision record — replayable, not reconstructed from logs after the fact.</td></tr>
+    <tr><td class="his">Jev decision + confidence</td><td class="ours">TYPED PROPOSAL</td>
+      <td>A finite choice, a confidence, a distribution over alternatives, and evidence references — wrapped in a decision envelope with its own typed identity. The classifier proposes. It never writes to the actuator path.</td></tr>
+    <tr><td class="his">Bounded authority</td><td class="ours">CEILINGS INTERSECT</td>
+      <td>Actor, parent, venue, and session ceilings combine by <b>intersection, never union</b>. A delegated or spawned sentinel inherits a subset — authority only attenuates down the lineage. Freeze is a narrow defensive act class; unfreeze is a separate, stronger act the sentinel does not hold.</td></tr>
+    <tr><td class="his">Route / provider / anomaly</td><td class="ours">TYPED SUBJECTS</td>
+      <td>Routes, providers, actors, decisions, and receipts each carry typed UUID identities. An identity is an <b>address for correlation — never a credential</b>. Authority comes from policy and gate outcome, never from possessing an ID.</td></tr>
+  </table>
+
+  <div class="honest"><b>The gray band is the honest middle.</b> Below the confidence floor a proposal is denied or observe-only. Inside the band it escalates to a human or higher guardian — it does not become a weak yes. Above the band it may proceed to deterministic checks. It still does not authorize by itself.</div>
+</section>
+
+<!-- ══════════ 3 · RECEIPT SCHEMA ══════════ -->
+<section id="receipts">
+  <div class="sec-head"><span class="no">02</span><h2>Receipt Schema, Side by Side</h2><span class="sub">click a step — see the receipt it wrote</span></div>
+  <p class="body">Your five receipt fields against the harness receipt, as actually written by
+  <span class="mono" style="font-size:13px">guardian.py</span>. Then run the worked scenario: a degraded ETH–USDC
+  route, classified, gated, frozen — three receipts, chain-verified. The counter-cases below are gate
+  self-checks: the gate denied or escalated <i>before</i> any act, so no act receipt exists — which is the point.</p>
+
+  <div class="twocol" style="margin-bottom:26px">
+    <div class="card">
+      <h3>Yours — the five fields</h3>
+      <ul>
+        <li><b>what was observed</b></li>
+        <li><b>what Jev decided</b></li>
+        <li><b>confidence / distribution</b></li>
+        <li><b>what policy allowed or denied</b></li>
+        <li><b>the final action taken</b></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Ours — where each field lives</h3>
+      <ul>
+        <li><b>evidence[]</b> on the proposal receipt — <span class="mono" style="font-size:12px">failures_5m, p95_ms, anomaly_score</span></li>
+        <li><b>choice</b> on the proposal receipt — the classifier&rsquo;s finite decision</li>
+        <li><b>confidence + distribution{}</b> on the proposal receipt</li>
+        <li><b>verdict + reason</b> on the gate-decision receipt</li>
+        <li><b>result{status}</b> on the act-result receipt</li>
+      </ul>
+    </div>
+  </div>
+  <p class="body">Plus the chain itself: every receipt carries <b>seq</b>, <b>kind</b>, <b>prev_hash</b>, and its own
+  <b>hash</b> — each receipt commits to the one before it, back to <span class="mono" style="font-size:13px">GENESIS</span>.
+  Tamper with any field and every later hash breaks. Typed identities (<span class="mono" style="font-size:13px">decision:…</span>,
+  <span class="mono" style="font-size:13px">actor:…</span>, <span class="mono" style="font-size:13px">route:…</span>) correlate the chain without acting as credentials.</p>
+
+  <div class="steps" id="steps"></div>
+  <div class="receipt-view" id="receiptView"></div>
+</section>
+
+<!-- ══════════ 4 · HARNESS ══════════ -->
+<section id="harness">
+  <div class="sec-head"><span class="no">03</span><h2>Harness, Verified</h2><span class="sub">stdlib only · ran on our machine · 2026-10-06</span></div>
+  <p class="body">The harness is deliberately small: a typed decision envelope, a policy gate, ceiling
+  intersection, gray-band routing, a deterministic actuator, and the hash-chained ledger. The classifier inside
+  is a <b>deterministic stub behind the typed envelope</b> — labeled as such in its own output
+  (<span class="mono" style="font-size:13px">classifier: "stub:deterministic-rules-v1"</span>). Live Jev swaps in behind the same
+  envelope without touching the gate. What is proven here is the <b>authority boundary</b>, not model accuracy.</p>
+
+  <div class="term"><span class="pass">PASS</span>  scenario classifies route_degraded
+<span class="pass">PASS</span>  gate allows freeze within intersected ceiling — above gray band and within ceiling
+<span class="pass">PASS</span>  actuator froze route
+<span class="pass">PASS</span>  receipt chain verifies — 3 receipts
+<span class="pass">PASS</span>  gray band escalates — gray band [0.35, 0.75] routes to escalation
+<span class="pass">PASS</span>  MOVE_FUNDS denied despite 0.99 confidence — forbidden act: deterministic authorization owns this path
+<span class="pass">PASS</span>  intersected ceiling denies over-value freeze — value 75000 exceeds ceiling 50000
+<span class="pass">PASS</span>  child cannot widen act class — UNFREEZE_ROUTE outside ceiling for actor
+
+<span class="final">SELF-CHECK GREEN: classifier proposes, deterministic gate disposes, receipts verify.</span></div>
+
+  <div class="checks">
+    <div class="check"><div class="badge">VERIFIED</div><div class="t">0.86 → FREEZE_ROUTE allowed</div>
+      <div class="d">Route degraded, confidence above the band, value $180k inside the intersected $250k ceiling. Freeze fired; route state = frozen.</div></div>
+    <div class="check"><div class="badge">VERIFIED</div><div class="t">0.99 → MOVE_FUNDS denied</div>
+      <div class="d">Forbidden acts deny at any confidence. Certainty buys the classifier nothing against the deterministic gate.</div></div>
+    <div class="check"><div class="badge">VERIFIED</div><div class="t">0.55 → escalates</div>
+      <div class="d">Inside the gray band [0.35, 0.75] the proposal routes to a higher guardian. Low confidence is never a weak yes.</div></div>
+    <div class="check"><div class="badge">VERIFIED</div><div class="t">Ceilings only narrow</div>
+      <div class="d">Child claimed UNFREEZE_ROUTE and a $500k limit; intersection with the parent kept $50k and refused the act class outright.</div></div>
+  </div>
+
+  <div class="honest"><b>What this does not claim:</b> no production DEX integration, no claim the classifier is accurate, no UUID-as-credential anywhere. A hash chain is tamper-evidence inside the ledger; production still needs signer and external-anchoring choices matched to the threat model. Those are named future work in the design note, not fine print.</div>
+
+  <p class="body" style="margin-top:24px"><b>Use it.</b> The harness is public — feed your own classifier&rsquo;s
+  output into the gate and prove what happened:
+  <a href="https://github.com/SoMaCoSF/architect-space/tree/main/harness">github.com/SoMaCoSF/architect-space/tree/main/harness</a>.
+  Stdlib only, no dependencies, no network. The classifier in the tree is the same labeled stub — what you
+  are testing is the boundary, not a model. Three commands:</p>
+
+  <div class="term">python3 cli.py run scenarios/honest-route-freeze.json --ledger ledger.jsonl
+python3 cli.py verify ledger.jsonl
+python3 cli.py check</div>
+
+  <p class="body"><span class="mono" style="font-size:13px">run</span> gates one scenario — your actor, your
+  ceilings, your classifier&rsquo;s finished proposal — and appends the chained receipts.
+  <span class="mono" style="font-size:13px">verify</span> recomputes the chain and names the first broken receipt.
+  <span class="mono" style="font-size:13px">check</span> is the conformance suite; every case is named, every failure is loud:</p>
+
+  <div class="term"><span class="pass">forbidden-act-deny</span>        MOVE_FUNDS at 0.99 confidence → DENY, no act receipt
+<span class="pass">over-ceiling-deny</span>         value above the intersected ceiling → DENY
+<span class="pass">child-widen-deny</span>          child claims an act class never granted → DENY
+<span class="pass">gray-band-escalate</span>        confidence in [0.35, 0.75] → ESCALATE, no act, no act receipt
+<span class="pass">forged-ceiling-refused</span>    actor claims more than the issuer granted → intersection refuses
+<span class="pass">tampered-receipt-fails</span>    one flipped field → verify FAILS at that receipt
+<span class="pass">deleted-receipt-fails</span>     middle receipt removed → verify FAILS
+<span class="pass">honest-chain-verifies</span>     honest end-to-end run → chain verifies</div>
+</section>
+
+<!-- ══════════ 5 · MOTION ══════════ -->
+<section id="motion">
+  <div class="sec-head"><span class="no">04</span><h2>Motion</h2><span class="sub">the shape, moving · rendered 2026-10-06</span></div>
+  <p class="body">Three renders of the same architecture. Nothing here is a physical system — every visual is a
+  rendering of identities, statistics, and gate outcomes, captioned as such. The active step wears gold; nothing else does.</p>
+
+  <div class="motion-card motion-wide">
+    <span class="tag">Video · 36s · MP4</span>
+    <video controls preload="metadata" src="https://github.com/SoMaCoSF/architect-space/releases/download/v0/guardian-sentinel-uuid-fit.mp4"></video>
+    <p class="cap"><b>The full walkthrough.</b> A typed UUID identity with capability ceilings; a classifier proposing
+    with its confidence shown as what it is — a rendered statistic, never a permission; the deterministic gate
+    intersecting ceilings and escalating the gray band; the act firing only through the gate and writing its
+    hash-chained receipt. Ends on the law: confidence routes, policy authorizes, receipts prove.
+    (The video file streams from the project&rsquo;s GitHub release, v0; the two loops below are hosted with this page.)</p>
+  </div>
+
+  <div class="motion-grid">
+    <div class="motion-card">
+      <span class="tag">Loop · 6.3s · GIF</span>
+      <img src="media/guardian-sentinel-core-cycle.gif" alt="Core cycle loop: signals, identity, classify, policy gate, act, receipt">
+      <p class="cap"><b>The core cycle.</b> Signals arrive → an identity is named → the classifier scores → the gate
+      decides → the act fires → a receipt is written. The gold step is the one that is live; the confidence bar is a
+      rendering of a statistic the classifier reported.</p>
+    </div>
+    <div class="motion-card">
+      <span class="tag">Diagram · 6s · GIF</span>
+      <img src="media/guardian-sentinel-uuid-fit-diagram.gif" alt="Diagram: one subject ID following route, classifier, gate, act, receipt, replay">
+      <p class="cap"><b>One subject ID, end to end.</b> A single typed identity follows route → classifier → policy
+      gate → act → receipt → operator replay. The ID is an address for correlation at every hop — never the thing
+      that grants the act.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 6 · ITPM × IMBUE ══════════ -->
+<section id="estate">
+  <div class="sec-head"><span class="no">05</span><h2>ITPM × Imbue, Inside This Shape</h2><span class="sub">the same discipline, two shipped forms</span></div>
+
+  <div class="twocol">
+    <div class="card">
+      <h3>ITPM — who signs</h3>
+      <p style="color:var(--dim);font-size:14px">ITPM is our activation platform for large capital builds —
+      hospitals and technology spaces delivered through trade lanes with hard gates between them. Its contribution
+      to this shape is the <b style="color:var(--ink)">activation discipline</b>: every act belongs to a lane, every lane
+      has an owner, and the next phase does not unlock until the interface before it is green <i>with evidence
+      attached</i> and signed by the role that owns it. Translated here: a freeze, a quarantine, an escalation are not
+      log lines — they are gated acts with a named signer and evidence, or they did not happen.</p>
+    </div>
+    <div class="card">
+      <h3>Imbue — the shipped proof</h3>
+      <p style="color:var(--dim);font-size:14px">Imbue is our desktop command deck, and this pattern already runs
+      inside it in production software: governed acts climb a policy decision point, are witnessed in a ledger
+      <i>before</i> state moves, and roll back only against records whose digest still matches the witness. Signed
+      posture packs stage a diff, apply through the gate, and snapshot first. The Guardian/Sentinel harness is that
+      same decide → witness → act spine, pointed at routes and providers instead of files. The pattern is not a
+      slide; it is shipping code with a test suite behind it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 7 · NOTES & ITERATION ══════════ -->
+<section id="notes">
+  <div class="sec-head"><span class="no">06</span><h2>Notes &amp; Iteration</h2><span class="sub">leave a note — it stays with the work</span></div>
+  <p class="body">This panel is the working surface. Add a note, edit it, delete it, or export the whole
+  thread as markdown and hand it back. Receipt fields you want added, thresholds you would set differently,
+  failure modes from your audit — all of it belongs here, attached to the artifact it describes.</p>
+
+  <div class="note-form">
+    <input type="text" id="noteAuthor" placeholder="Name or handle (optional)" maxlength="60">
+    <textarea id="noteBody" rows="4" placeholder="Write the note — what you observed, what you would change, what the receipt is missing…"></textarea>
+    <div class="btnrow">
+      <button class="btn primary" id="addNote">Add note</button>
+      <button class="btn" id="exportNotes">Export notes (.md)</button>
+      <button class="btn danger" id="clearNotes">Clear all</button>
+    </div>
+  </div>
+  <div id="noteList"></div>
+  <div class="honest"><b>Honest storage note:</b> notes live in this browser today (localStorage) — they persist
+  on this machine, in this browser, and nowhere else. Shared sync across people and machines is the next
+  iteration of this space.</div>
+
+  <h3 style="font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:38px 0 6px">Iteration log</h3>
+  <ul class="log">
+    <li><span class="when">2026-10-06</span><span class="what"><b>v0 — space opened.</b> Architect collaboration space staged: shared vocabulary map, receipt schema side-by-side, worked scenario.</span></li>
+    <li><span class="when">2026-10-06</span><span class="what"><b>v0 — harness verified.</b> Guardian/Sentinel self-check green on our machine: 0.86 → freeze allowed, 0.99 → MOVE_FUNDS denied, gray band escalates, ceilings intersect. Design note SOM-DOC-10109.</span></li>
+    <li><span class="when">2026-10-06</span><span class="what"><b>v0 — doctrine converged.</b> Architect&rsquo;s reply confirmed the shared shape: LedgerGuard as policy boundary, decision-receipts, bounded authority. This log appends from here — every iteration gets a dated line.</span></li>
+    <li><span class="when">2026-10-06</span><span class="what"><b>v0 — motion published.</b> Three renders of the shape added above: the 36-second walkthrough, the core-cycle loop, and the subject-ID diagram. Every confidence visual is captioned as a rendered statistic, never a permission.</span></li>
+    <li><span class="when">2026-10-06</span><span class="what"><b>v0 — test harness published.</b> The harness is now a CLI anyone can drive: <span class="mono">run / verify / check</span>, six readable scenarios, and a conformance suite that fails loud on tampering. Source in the architect-space repo under <span class="mono">harness/</span>. Plug your classifier in; the gate does not care whose model proposed.</span></li>
+  </ul>
+</section>
+
+<footer>
+  <span>SOMACOSF</span>
+  <span>built for iteration, not a pitch deck</span>
+</footer>
+
+</div>
+
+<script>
+/* ── Receipt scenario data: real output of guardian.py --scenario (2026-10-06) ── */
+const STEPS = [
+  { label:"1 · Classifier proposes", verdict:"allow", vtext:"RECEIPT 1 OF 3 · CLASSIFIER_PROPOSAL",
+    note:"failures_5m=17, p95_ms=1240 — the stub (typed envelope, live Jev is the swap) calls route_degraded at 0.86 and proposes FREEZE_ROUTE. It writes the proposal to the ledger. It cannot touch the actuator.",
+    json:[
+      ['seq',1,'n'], ['kind','"classifier_proposal"','s'],
+      ['decision_id','"decision:0ad0add2-2ed2-5f5a-9221-23c5c785a3dd"','s'],
+      ['subject (route)','"route:0e1ba18f-e918-518a-8d0e-82d64bd190c8"','s'],
+      ['proposer (actor)','"actor:dbe44edd-ebbb-5814-9f63-1da83be8b497"','s'],
+      ['choice','"route_degraded"','s'], ['confidence',0.86,'n'],
+      ['distribution','{ route_degraded .86 · route_ok .09 · provider_suspect .05 }','h'],
+      ['evidence','[ failures_5m=17, p95_ms=1240, anomaly_score=0.22 ]','h'],
+      ['proposed_act','"FREEZE_ROUTE"','s'], ['scope','"route:eth-usdc"','s'],
+      ['value_at_risk','180000','n'], ['classifier','"stub:deterministic-rules-v1"','s'],
+      ['prev_hash','"GENESIS"','s'],
+      ['hash','"8be3972a…a733c28f0"','h']
+    ]},
+  { label:"2 · Gate disposes", verdict:"allow", vtext:"RECEIPT 2 OF 3 · GATE_DECISION · ALLOW",
+    note:"The PDP intersects actor ∩ parent ceilings ($250k effective), checks act class and scope, and allows. Reason is written on the receipt — policy explains itself, or the decision does not count.",
+    json:[
+      ['seq',2,'n'], ['kind','"gate_decision"','s'],
+      ['decision_id','"decision:0ad0add2-2ed2-5f5a-9221-23c5c785a3dd"','s'],
+      ['verdict','"ALLOW"','s'], ['act','"FREEZE_ROUTE"','s'],
+      ['reason','"above gray band and within ceiling"','s'],
+      ['prev_hash','"8be3972a…a733c28f0"','h'],
+      ['hash','"7f782518…1e758"','h']
+    ]},
+  { label:"3 · Act + witness", verdict:"allow", vtext:"RECEIPT 3 OF 3 · ACT_RESULT · CHAIN VERIFIED ✓",
+    note:"Only the deterministic actuator executes, and only on ALLOW. The result lands as the third receipt; the chain from GENESIS re-verifies end to end. The audit trail is this chain — not a postmortem.",
+    json:[
+      ['seq',3,'n'], ['kind','"act_result"','s'],
+      ['decision_id','"decision:0ad0add2-2ed2-5f5a-9221-23c5c785a3dd"','s'],
+      ['act','"FREEZE_ROUTE"','s'], ['verdict','"ALLOW"','s'],
+      ['result','{ status: "frozen", scope: "route:eth-usdc" }','h'],
+      ['prev_hash','"7f782518…1e758"','h'],
+      ['hash','"0e430e4a…1b"','h'],
+      ['chain_verified','true','n']
+    ]},
+  { label:"✕ 0.99 → MOVE_FUNDS", verdict:"deny", vtext:"SELF-CHECK · GATE DENY · NO ACT RECEIPT",
+    note:"A synthetic case from the self-check: the classifier is 0.99 certain and proposes MOVE_FUNDS. The gate denies before any act — forbidden acts belong to a separate deterministic authorization path. Confidence is not authority.",
+    json:[
+      ['check','"MOVE_FUNDS denied despite 0.99 confidence"','s'],
+      ['verdict','"DENY"','s'],
+      ['reason','"forbidden act: deterministic authorization owns this path"','s'],
+      ['act_receipt','none — denied at the gate','h']
+    ]},
+  { label:"↗ 0.55 → gray band", verdict:"escalate", vtext:"SELF-CHECK · GATE ESCALATE · NO ACT RECEIPT",
+    note:"At 0.55 the proposal sits inside the gray band [0.35, 0.75]. It escalates to a human or higher guardian instead of becoming a weak yes. Uncertainty gets routed, not rounded.",
+    json:[
+      ['check','"gray band escalates"','s'],
+      ['verdict','"ESCALATE"','s'],
+      ['reason','"gray band [0.35, 0.75] routes to escalation"','s'],
+      ['act_receipt','none — awaiting higher authority','h']
+    ]},
+  { label:"✕ Child widens", verdict:"deny", vtext:"SELF-CHECK · CEILING INTERSECTION · DENY",
+    note:"The child ceiling claimed UNFREEZE_ROUTE and $500k; the parent allows $50k and no unfreeze. Intersection keeps the narrower of everything: over-value freeze denied, act class refused outright. Lineage only attenuates.",
+    json:[
+      ['check','"child cannot widen act class"','s'],
+      ['attempted','UNFREEZE_ROUTE · $75,000 freeze','h'],
+      ['verdict','"DENY"','s'],
+      ['reason','"value 75000 exceeds ceiling 50000 · UNFREEZE_ROUTE outside ceiling"','s']
+    ]}
+];
+
+const stepsEl = document.getElementById('steps');
+const viewEl  = document.getElementById('receiptView');
+STEPS.forEach((s,i)=>{
+  const b=document.createElement('button');
+  b.className='step'+(i===0?' sel':''); b.innerHTML=s.label;
+  b.onclick=()=>{document.querySelectorAll('button.step').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');render(i);};
+  stepsEl.appendChild(b);
+});
+function render(i){
+  const s=STEPS[i];
+  const rows=s.json.map(([k,v,t])=>
+    '  <span class="k">"'+k+'"</span>: <span class="'+(t==='s'?'s':t==='n'?'n':'h')+'">'+v+'</span>').join(',\n');
+  viewEl.innerHTML='<div class="rhead"><span class="verdict '+s.verdict+'">'+s.vtext+'</span></div>'
+    +'<pre>{\n'+rows+'\n}</pre>'
+    +'<p style="margin-top:12px;font-size:13px;color:var(--dim)">'+s.note+'</p>';
+}
+render(0);
+
+/* ── Notes: localStorage CRUD + markdown export ── */
+const KEY='architect-notes-v1';
+const listEl=document.getElementById('noteList');
+const bodyEl=document.getElementById('noteBody');
+const authorEl=document.getElementById('noteAuthor');
+let editing=null;
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}};
+const save=n=>localStorage.setItem(KEY,JSON.stringify(n));
+const fmt=ts=>new Date(ts).toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+function draw(){
+  const notes=load();
+  if(!notes.length){listEl.innerHTML='<div class="empty">No notes yet. The first one starts the thread.</div>';return;}
+  listEl.innerHTML='';
+  notes.slice().reverse().forEach(n=>{
+    const d=document.createElement('div'); d.className='note';
+    const who=n.author?(' · '+n.author.replace(/</g,'&lt;')):'';
+    d.innerHTML='<div class="nmeta"><span>'+fmt(n.ts)+who+(n.edited?' · edited':'')+'</span></div>'
+      +'<div class="nbody"></div><div class="nops">'
+      +'<button class="btn small">Edit</button><button class="btn small danger">Delete</button></div>';
+    d.querySelector('.nbody').textContent=n.body;
+    const [eb,db]=d.querySelectorAll('button');
+    eb.onclick=()=>{editing=n.id;bodyEl.value=n.body;authorEl.value=n.author||'';bodyEl.focus();
+      document.getElementById('addNote').textContent='Save edit';};
+    db.onclick=()=>{if(confirm('Delete this note?')){save(load().filter(x=>x.id!==n.id));draw();}};
+    listEl.appendChild(d);
+  });
+}
+document.getElementById('addNote').onclick=()=>{
+  const body=bodyEl.value.trim(); if(!body){bodyEl.focus();return;}
+  const notes=load();
+  if(editing){const n=notes.find(x=>x.id===editing);
+    if(n){n.body=body;n.author=authorEl.value.trim();n.edited=Date.now();}
+    editing=null;document.getElementById('addNote').textContent='Add note';}
+  else notes.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+    ts:Date.now(),author:authorEl.value.trim(),body});
+  save(notes); bodyEl.value=''; draw();
+};
+document.getElementById('clearNotes').onclick=()=>{
+  if(load().length && confirm('Clear all notes in this browser?')){localStorage.removeItem(KEY);editing=null;draw();}
+};
+document.getElementById('exportNotes').onclick=()=>{
+  const notes=load();
+  let md='# Architect — Guardian/Sentinel Working Space · Notes Export\n\nExported: '+new Date().toISOString()+'\nSource: architect working space (browser-local notes)\n';
+  if(!notes.length) md+='\n_No notes yet._\n';
+  notes.forEach(n=>{md+='\n## '+fmt(n.ts)+(n.author?' — '+n.author:'')+(n.edited?' (edited)':'')+'\n\n'+n.body+'\n';});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));
+  a.download='architect-notes-'+new Date().toISOString().slice(0,10)+'.md'; a.click();
+  URL.revokeObjectURL(a.href);
+};
+draw();
+</script>
+</body>
+</html>
