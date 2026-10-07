@@ -8,11 +8,15 @@ gate and prove what happened. Stdlib only.
 Commands:
   run <scenario.json> [--ledger ledger.jsonl]   gate one proposed decision
   verify <ledger.jsonl>                          recompute the receipt chain
+  compare <their-ledger.jsonl>                   map an external receipt ledger
+  thresholds <their-thresholds.json>             diff supplied policy thresholds
   check                                          conformance suite
 
 The gate never calls your classifier. You feed it a finished proposal.
+`compare` and `thresholds` are report-only: neither mutates policy constants.
 Exit codes: run 0 ok (any verdict) / 2 usage or broken input ledger;
-verify 0 PASS / 1 FAIL; check 0 all pass / 1 any fail.
+verify 0 PASS / 1 FAIL; compare 0 report generated / 2 unreadable input;
+thresholds 0 report generated / 2 unreadable input; check 0 all pass / 1 any fail.
 """
 
 from __future__ import annotations
@@ -35,9 +39,16 @@ from guardian import (  # noqa: E402
     sha,
     tid,
 )
+from convergence import (  # noqa: E402
+    compare_ledger,
+    format_compare_report,
+    load_thresholds,
+    thresholds_report,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCENARIO_DIR = os.path.join(HERE, "scenarios")
+FIXTURE_DIR = os.path.join(HERE, "fixtures")
 
 
 # ── scenario loading ────────────────────────────────────────────────────────
@@ -230,6 +241,38 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_compare(args: argparse.Namespace) -> int:
+    try:
+        result = compare_ledger(args.ledger)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    if args.out:
+        try:
+            with open(args.out, "w", encoding="utf-8") as fh:
+                for item in result["mapped_records"]:
+                    fh.write(json.dumps(item["mapped"], sort_keys=True) + "\n")
+        except OSError as exc:
+            print(f"ERROR: cannot write mapped schema view to {args.out}: {exc}", file=sys.stderr)
+            return 2
+        print(f"mapped schema view: {args.out} ({result['record_count']} record(s))")
+
+    print(format_compare_report(result))
+    return 0
+
+
+def cmd_thresholds(args: argparse.Namespace) -> int:
+    try:
+        data = load_thresholds(args.thresholds)
+        report = thresholds_report(data)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    print(report["text"])
+    return 0
+
+
 def cmd_check(_args: argparse.Namespace) -> int:
     results: list[tuple[str, bool, str]] = []
 
@@ -283,11 +326,50 @@ def cmd_check(_args: argparse.Namespace) -> int:
         ok, msg = verify_chain(load_ledger(deleted_path))
         record("deleted-receipt-fails", not ok, msg)
 
+    convergent = compare_ledger(os.path.join(FIXTURE_DIR, "their-ledger-convergent.jsonl"))
+    record(
+        "compare-convergent-passes",
+        bool(convergent["five_field_convergent"]),
+        f"{convergent['record_count']} external records; all five fields mapped; no unmapped fields",
+    )
+
+    divergent = compare_ledger(os.path.join(FIXTURE_DIR, "their-ledger-divergent.jsonl"))
+    distribution_row = next(r for r in divergent["core_rows"] if r["canonical"] == "distribution")
+    named_gaps = sorted(divergent["unmapped_fields"])
+    record(
+        "compare-divergent-names-gaps",
+        not divergent["five_field_convergent"]
+        and len(distribution_row["mapped_lines"]) < divergent["record_count"]
+        and "operator_note" in divergent["unmapped_fields"]
+        and "venue_latency_ms" in divergent["unmapped_fields"],
+        "missing distribution named; unmapped fields named: " + ", ".join(named_gaps),
+    )
+
+    threshold_probe = thresholds_report({
+        "source": "conformance-probe",
+        "gray_band": {"low": 0.42, "high": 0.68},
+        "ceilings": {"max_value_at_risk": 500000},
+        "latency_budgets_ms": {"end_to_end_p95": 125},
+        "failure_modes": {
+            "total_decisions": 1000,
+            "counts": {"gray_band_escalation": 125, "forbidden_act_attempt": 3},
+        },
+    })
+    threshold_text = threshold_probe["text"]
+    record(
+        "thresholds-diff-reports",
+        "GRAY_LOW: current 0.35 -> supplied 0.42 (Δ +0.07)" in threshold_text
+        and "GRAY_HIGH: current 0.75 -> supplied 0.68 (Δ -0.07)" in threshold_text
+        and "REFERENCE_MAX_VALUE_AT_RISK: current 250,000 -> supplied 500,000" in threshold_text
+        and "REPORT ONLY — ingestion never applies policy constants" in threshold_text,
+        "gray band, reference ceiling, latency, and failure-mode deltas reported; nothing auto-applied",
+    )
+
     failed = [n for n, ok, _ in results if not ok]
     if failed:
         print(f"\nCONFORMANCE FAILED: {len(failed)} case(s): {', '.join(failed)}")
         return 1
-    print(f"\nCONFORMANCE GREEN: {len(results)} cases — the gate denies what it must, escalates the gray band, and the chain catches tampering.")
+    print(f"\nCONFORMANCE GREEN: {len(results)} cases — the gate denies what it must, escalates the gray band, the chain catches tampering, and the convergence kit maps external receipts and diffs thresholds without applying them.")
     return 0
 
 
@@ -303,6 +385,15 @@ def main(argv: list[str] | None = None) -> int:
     p_verify = sub.add_parser("verify", help="recompute a ledger's hash chain")
     p_verify.add_argument("ledger")
     p_verify.set_defaults(fn=cmd_verify)
+
+    p_compare = sub.add_parser("compare", help="map an external Architect-shaped receipt ledger")
+    p_compare.add_argument("ledger")
+    p_compare.add_argument("--out", help="optional JSONL file for the mapped schema view")
+    p_compare.set_defaults(fn=cmd_compare)
+
+    p_thresholds = sub.add_parser("thresholds", help="diff supplied thresholds against current constants")
+    p_thresholds.add_argument("thresholds")
+    p_thresholds.set_defaults(fn=cmd_thresholds)
 
     p_check = sub.add_parser("check", help="run the conformance suite")
     p_check.set_defaults(fn=cmd_check)

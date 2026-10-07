@@ -1,0 +1,2 @@
+{"observation":"provider=relay-west-1 missed_heartbeats=5","decision":"provider_suspect","confidence_score":0.82,"policy_decision":{"allowed":true,"reason":"provider ceiling permits quarantine"},"action_taken":"QUARANTINE_PROVIDER","operator_note":"venue incident channel reported the same symptom"}
+{"observed":["route=sol-usdc-main","failures_5m=21","p95_ms=1510"],"decided":"route_degraded","confidence":0.88,"policy":"denied","final_action":"none","venue_latency_ms":1430}

@@ -1,0 +1,3 @@
+{"observed":["route=eth-usdc-main","failures_5m=17","p95_ms=1240"],"decided":"route_degraded","confidence":0.86,"distribution":{"route_degraded":0.86,"route_ok":0.09,"provider_suspect":0.05},"policy":"allowed","final_action":"FREEZE_ROUTE"}
+{"observed":["provider=relay-east-3","missed_heartbeats=4","p95_ms=410"],"decided":"anomaly_unknown","confidence":0.55,"distribution":{"anomaly_unknown":0.55,"provider_suspect":0.30,"route_ok":0.15},"policy":"escalated","final_action":"none"}
+{"observed":["route=btc-usdc-main","failures_5m=2","p95_ms=180"],"decided":"route_ok","confidence":0.93,"distribution":{"route_ok":0.93,"route_degraded":0.05,"provider_suspect":0.02},"policy":"denied","final_action":"none"}
