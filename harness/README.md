@@ -171,6 +171,7 @@ The conformance suite. Each case is named and must pass:
 | `tampered-receipt-fails` | flipping one payload field → verify FAILS at that receipt |
 | `deleted-receipt-fails` | removing the middle receipt → verify FAILS |
 | `honest-chain-verifies` | an honest end-to-end run → chain verifies |
+| `honest-allow-writes-act` | an in-ceiling, above-band proposal → ALLOW plus an act receipt |
 | `compare-convergent-passes` | an Architect-shaped ledger with all five fields maps cleanly |
 | `compare-divergent-names-gaps` | missing distribution and no-home fields are named, never dropped |
 | `thresholds-diff-reports` | supplied gray-band, ceiling, latency, and failure-mode data produce exact candidate deltas, with nothing auto-applied |
